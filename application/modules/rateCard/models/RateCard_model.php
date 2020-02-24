@@ -1,0 +1,70 @@
+<?php
+//require_once APPPATH.'config/database_constants.php';
+class RateCard_model extends CI_Model
+{
+
+    public function getRateCardList($uniqSessionID, $userId)
+    {
+        $usrID = $this->checkUserID($userId, $uniqSessionID);
+
+        if ($usrID != '0') {
+            $query = "SELECT `RateCode`, `Percentage`, `Amount`, DATE_FORMAT(`ValidFrom`,'%d-%b-%Y') as ValidFrom, DATE_FORMAT(`ValidTill`,'%d-%b-%Y') as ValidTill, `Remarks`, `C_ID`, Date_format(`C_Date`,'%d-%b-%Y %I:%i %p') as C_Date , `M_ID`, Date_format(`M_Date`,'%d-%b-%Y %I:%i %p') as M_Date FROM `RateCard` ORDER by RateCode DESC";
+            $result = $this->db->query($query);
+            $data = array();
+            if ($result->num_rows() > 0) {
+                foreach ($result->result_array() as $row) {
+                    $data[] = $row;
+                }
+            }
+            return $data;
+        } else {
+            return 'Session MisMatch';
+        }
+    }
+
+    public function insertRateCard($Percentage, $Amount, $ValidFrom, $ValidTill, $Remarks, $C_ID){
+        
+            $query = "insert into RateCard(Percentage, Amount, ValidFrom, ValidTill, Remarks, C_ID, M_ID) values(".$Percentage.", ".$Amount.", '".$ValidFrom."', '".$ValidTill."', '".$Remarks."', '".$C_ID."', '".$C_ID."')";
+            $result = $this->db->query($query);
+            return true;
+    }
+
+    public function checkUserID($userId, $uniqSessionID)
+    {
+
+        $select_query = array();
+        $select = array(
+            'IFNULL (`id`,"") as id',
+            'IFNULL (`user_name`,"") as username',
+        );
+        $arrTables = array(
+            '`users`',
+        );
+
+        $this->db->select($select);
+        $this->db->from($arrTables);
+        //if(!empty($input['id']))
+        $this->db->where('`id`', $userId)->where('uniqueId', $uniqSessionID);
+
+        $db_select_query = $this->db->get()->result_array();
+
+        if (!empty($db_select_query)) {
+            return $db_select_query[0]['id'];
+        } else {
+            return '0';
+        }
+
+    }
+    
+    public function getCurrentRateCard(){
+        $data=array();
+        $qry = "select * from RateCard where now() between validfrom and validtill order by RateCode desc limit 1";
+        $result = $this->db->query($qry);
+        if ($result->num_rows() > 0) {
+            foreach ($result->result_array() as $row) {
+                $data[] = $row;
+            }
+        }
+        return $data;
+    }
+}
